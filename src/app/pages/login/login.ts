@@ -1,6 +1,6 @@
 import { HttpClient } from '@angular/common/http';
 import { Component } from '@angular/core';
-import { FormControl, Validators, ReactiveFormsModule } from '@angular/forms';
+import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { AuthService } from '../../services/auth';
 import { Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
@@ -13,47 +13,55 @@ import { CommonModule } from '@angular/common';
   styleUrl: './login.css',
 })
 export class Login {
-
   loading = false;
   errorMessage = '';
 
-  username = new FormControl('', [Validators.required]);
-
-  password = new FormControl('', [
-    Validators.required,
-    Validators.minLength(4),
-  ]);
+  form: FormGroup;
 
   constructor(
+    private fb: FormBuilder,
     private http: HttpClient,
     private auth: AuthService,
     private router: Router
-  ) {}
+  ) {
+    this.form = this.fb.group({
+      username: ['', [Validators.required]],
+      password: ['', [Validators.required, Validators.minLength(4)]],
+    });
+  }
+
+  get username() {
+    return this.form.get('username');
+  }
+
+  get password() {
+    return this.form.get('password');
+  }
 
   submit() {
-    if (this.username.invalid || this.password.invalid) return;
+    if (this.form.invalid) {
+      this.form.markAllAsTouched();
+      return;
+    }
 
     this.loading = true;
     this.errorMessage = '';
 
-    const payload = {
-      username: this.username.value ?? '',
-      password: this.password.value ?? '',
-    };
+    const payload = this.form.value;
 
-    this.http.post<{ token: string }>('/login', payload)
-      .subscribe({
-        next: (res) => {
-          this.auth.login(res.token);
-          this.router.navigate(['/users']);
-        },
-        error: () => {
-          this.errorMessage = 'Invalid username or password';
-          this.loading = false;
-        },
-        complete: () => {
-          this.loading = false;
-        }
-      });
+    this.http.post<{ token: string }>('/login', payload).subscribe({
+      next: (res) => {
+        this.auth.login(res.token);
+        this.router.navigate(['/users']);
+      },
+      error: (err) => {
+        console.error('Login failed', err);
+        this.errorMessage = 'Invalid username or password';
+        this.loading = false;
+      },
+      complete: () => {
+        this.loading = false;
+      }
+    });
   }
 }

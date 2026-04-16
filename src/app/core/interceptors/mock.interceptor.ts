@@ -4,8 +4,30 @@ import { User } from '../../models/user.model';
 import { AuthModel } from '../../models/auth.model';
 
 let users: User[] = [
-  { id: 1, name: 'John Doe', phone: '', username: 'john', email: 'john@test.com' },
-  { id: 2, name: 'Jane Smith', phone: '', username: 'jane', email: 'jane@test.com' }
+  { 
+    id: 1, 
+    name: 'John Doe', 
+    username: 'john', 
+    email: 'john@test.com', 
+    phone: '+1234567890',
+    role: 'admin',
+    status: 'active',
+    department: 'IT',
+    lastLogin: new Date().toISOString().split('T')[0],
+    createdAt: new Date().toISOString().split('T')[0]
+  },
+  { 
+    id: 2, 
+    name: 'Jane Smith', 
+    username: 'jane', 
+    email: 'jane@test.com', 
+    phone: '+0987654321',
+    role: 'viewer',
+    status: 'active',
+    department: 'HR',
+    lastLogin: new Date().toISOString().split('T')[0],
+    createdAt: new Date().toISOString().split('T')[0]
+  }
 ];
 
 const LATENCY = 400;
@@ -29,10 +51,18 @@ export const mockBackendInterceptor: HttpInterceptorFn = (req, next) => {
     return error(401, 'Invalid credentials');
   }
 
-  if (!headers.get('Authorization')) {
-    return error(401, 'Unauthorized');
+  const authHeader = headers.get('Authorization');
+  
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return error(401, 'Unauthorized - No valid token provided');
   }
 
+  const token = authHeader.split(' ')[1];
+  
+  // Validate the token
+  if (token !== 'fake-jwt-token') {
+    return error(401, 'Unauthorized - Invalid token');
+  }
 
   if (url.endsWith('/users') && method === 'GET') {
     return ok(users);
@@ -41,7 +71,9 @@ export const mockBackendInterceptor: HttpInterceptorFn = (req, next) => {
   if (url.endsWith('/users') && method === 'POST') {
     const newUser: User = {
       ...body as User,
-      id: Date.now()
+      id: Date.now(),
+      createdAt: new Date().toISOString().split('T')[0],
+      lastLogin: undefined 
     };
 
     users.push(newUser);
@@ -50,9 +82,10 @@ export const mockBackendInterceptor: HttpInterceptorFn = (req, next) => {
 
   if (/\/users\/\d+$/.test(url) && method === 'PUT') {
     const id = Number(url.split('/').pop());
+    const updatedData = body as User;
 
     users = users.map(u =>
-      u.id === id ? { ...u, ...body as User, id } : u
+      u.id === id ? { ...u, ...updatedData, id } : u
     );
 
     const updatedUser = users.find(u => u.id === id);
@@ -63,7 +96,7 @@ export const mockBackendInterceptor: HttpInterceptorFn = (req, next) => {
     const id = Number(url.split('/').pop());
     users = users.filter(u => u.id !== id);
 
-    return ok({ message: 'User deleted' });
+    return ok({ message: 'User deleted successfully' });
   }
 
   return next(req);

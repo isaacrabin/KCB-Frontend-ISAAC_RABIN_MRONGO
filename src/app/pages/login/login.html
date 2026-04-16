@@ -1,16 +1,17 @@
 <div class="min-h-screen flex flex-col bg-[var(--kcb-primary)] relative overflow-hidden">
 
-
   <div class="absolute inset-0 pointer-events-none"
        style="background-image: radial-gradient(circle at 15% 85%, rgba(124,193,66,0.18) 0%, transparent 50%),
                             radial-gradient(circle at 85% 15%, rgba(0,89,102,0.6) 0%, transparent 50%)">
   </div>
+
   <div class="absolute inset-0 pointer-events-none"
        style="background-image: repeating-linear-gradient(45deg, transparent, transparent 60px, rgba(255,255,255,0.02) 60px, rgba(255,255,255,0.02) 61px)">
   </div>
 
   <div class="relative z-10 flex flex-col items-center justify-center min-h-screen p-8 gap-8">
 
+    <!-- Header -->
     <div class="text-center">
       <div class="inline-flex items-center gap-3 mb-2">
         <div class="w-12 h-12 bg-[var(--kcb-accent)] rounded-xl flex items-center justify-center">
@@ -20,68 +21,78 @@
           KCB <span class="text-[var(--kcb-accent)]">Portal</span>
         </h1>
       </div>
-      <p class="text-white/55 text-xs tracking-wide uppercase mt-1">User Management System</p>
+      <p class="text-white/55 text-xs tracking-wide uppercase mt-1">
+        User Management System
+      </p>
     </div>
 
+    <!-- Login Card -->
     <div class="bg-white rounded-2xl p-10 w-full max-w-md shadow-2xl">
-      <h2 class="text-xl font-bold text-[var(--kcb-primary)] mb-1">Welcome back</h2>
-      <p class="text-gray-500 text-sm mb-6">Sign in to manage your users and access the dashboard.</p>
+      <h2 class="text-xl font-bold text-[var(--kcb-primary)] mb-1">
+        Welcome back
+      </h2>
+      <p class="text-gray-500 text-sm mb-6">
+        Sign in to manage your users and access the dashboard.
+      </p>
 
-      <form (ngSubmit)="submit()" class="space-y-4">
+      <!-- FORM (FIXED) -->
+      <form class="space-y-4" [formGroup]="form" (ngSubmit)="submit()">
 
+        <!-- Username -->
         <div>
           <label for="username" class="sr-only">Username</label>
+
           <input
             id="username"
             type="text"
-            [formControl]="username"
+            formControlName="username"
             placeholder="Username"
             autocomplete="username"
-            [attr.aria-invalid]="username.invalid && username.touched"
-            aria-describedby="username-error"
             class="w-full p-3 rounded-lg border border-gray-200
-                   focus:outline-none focus:ring-2 focus:ring-[var(--kcb-accent)] focus:border-transparent
-                   transition duration-200"
+                   focus:outline-none focus:ring-2 focus:ring-[var(--kcb-accent)]
+                   focus:border-transparent transition duration-200"
           />
 
-          @if (username.touched && username.invalid) {
-            <p id="username-error" class="text-red-500 text-xs mt-1" role="alert">
+          @if (username?.touched && username?.invalid) {
+            <p class="text-red-500 text-xs mt-1" role="alert">
               Username is required
             </p>
           }
         </div>
 
+        <!-- Password -->
         <div>
           <label for="password" class="sr-only">Password</label>
+
           <input
             id="password"
             type="password"
-            [formControl]="password"
+            formControlName="password"
             placeholder="Password"
             autocomplete="current-password"
-            [attr.aria-invalid]="password.invalid && password.touched"
-            aria-describedby="password-error"
             class="w-full p-3 rounded-lg border border-gray-200
-                   focus:outline-none focus:ring-2 focus:ring-[var(--kcb-accent)] focus:border-transparent
-                   transition duration-200"
+                   focus:outline-none focus:ring-2 focus:ring-[var(--kcb-accent)]
+                   focus:border-transparent transition duration-200"
           />
 
-          @if (password.touched && password.errors) {
-            <p id="password-error" class="text-red-500 text-xs mt-1" role="alert">
+          @if (password?.touched && password?.errors) {
+            <p class="text-red-500 text-xs mt-1" role="alert">
               Password must be at least 4 characters
             </p>
           }
         </div>
 
+        <!-- API Error -->
         @if (errorMessage) {
           <p class="text-red-600 text-sm" role="alert">
             {{ errorMessage }}
           </p>
         }
 
+        <!-- Submit Button -->
         <button
           type="submit"
-          [disabled]="username.invalid || password.invalid || loading"
+          [disabled]="form.invalid || loading"
           class="w-full bg-[var(--kcb-primary)] hover:bg-[var(--kcb-primary-light)]
                  text-white py-3 rounded-lg font-semibold
                  transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed
@@ -89,21 +100,27 @@
         >
           @if (!loading) {
             <span>Sign In</span>
-          }
-          @if (loading) {
+          } @else {
             <span class="inline-flex items-center justify-center gap-2">
-              <svg class="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              <svg class="animate-spin h-4 w-4 text-white" viewBox="0 0 24 24" fill="none">
+                <circle class="opacity-25" cx="12" cy="12" r="10"
+                        stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
               </svg>
               Signing in...
             </span>
           }
         </button>
 
+        <!-- Test credentials -->
         <div class="flex items-start gap-2 bg-[rgba(124,193,66,0.08)] border border-[rgba(124,193,66,0.25)] rounded-lg p-3 text-xs text-[var(--kcb-primary-light)]">
-          <span>Test: <strong>admin</strong> / <strong>admin123</strong> or <strong>user</strong> / <strong>user123</strong></span>
+          <span>
+            Test: <strong>admin</strong> / <strong>admin123</strong> or
+            <strong>user</strong> / <strong>user123</strong>
+          </span>
         </div>
+
       </form>
     </div>
   </div>

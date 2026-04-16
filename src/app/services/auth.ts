@@ -1,20 +1,22 @@
-import { Injectable, signal } from '@angular/core';
+import { Injectable, signal, computed } from '@angular/core';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
-  token = signal<string | null>(localStorage.getItem('token'));
+  private readonly TOKEN_KEY = 'token';
+  token = signal<string | null>(localStorage.getItem(this.TOKEN_KEY));
+  isAuthenticated = computed(() => !!this.token());
 
-  login(token: string) {
-    localStorage.setItem('token', token);
+  login(token: string): void {
+    localStorage.setItem(this.TOKEN_KEY, token);
     this.token.set(token);
   }
 
-  logout() {
-    localStorage.removeItem('token');
+  logout(): void {
+    localStorage.removeItem(this.TOKEN_KEY);
     this.token.set(null);
   }
 
-  isAuthenticated() {
-    return !!this.token();
+  getToken(): string | null {
+    return this.token();
   }
 }

@@ -1,8 +1,9 @@
-// users.component.ts
 import { Component, OnInit, signal, computed, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { UserService } from '../../services/user';
+import { AuthService } from '../../services/auth';
+import { Router } from '@angular/router';
 import { User } from '../../models/user.model';
 
 @Component({
@@ -14,6 +15,8 @@ import { User } from '../../models/user.model';
 })
 export class Users implements OnInit {
   private userService = inject(UserService);
+  private authService = inject(AuthService);
+  private router = inject(Router);
 
   // State
   users = signal<User[]>([]);
@@ -53,7 +56,7 @@ export class Users implements OnInit {
         label: 'Total Users', 
         value: users.length, 
         subLabel: 'All registered users', 
-        color: 'var(--kcb-primary)', 
+        color: '#003D4C', 
         bgColor: 'rgba(0,61,76,0.07)', 
         icon: 'M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2 M9 7a4 4 0 100-8 4 4 0 000 8z M23 21v-2a4 4 0 00-3-3.87 M16 3.13a4 4 0 010 7.75' 
       },
@@ -61,7 +64,7 @@ export class Users implements OnInit {
         label: 'Active', 
         value: users.filter(u => u.status === 'active').length, 
         subLabel: 'Currently active', 
-        color: 'var(--kcb-success)', 
+        color: '#00B894', 
         bgColor: 'rgba(0,184,148,0.08)', 
         icon: 'M22 11.08V12a10 10 0 11-5.93-9.14 M22 4L12 14.01 9 11.01' 
       },
@@ -69,7 +72,7 @@ export class Users implements OnInit {
         label: 'Pending', 
         value: users.filter(u => u.status === 'pending').length, 
         subLabel: 'Awaiting activation', 
-        color: 'var(--kcb-warning)', 
+        color: '#F39C12', 
         bgColor: 'rgba(243,156,18,0.08)', 
         icon: 'M12 22a10 10 0 110-20 10 10 0 010 20z M12 6v6l4 2' 
       },
@@ -77,7 +80,7 @@ export class Users implements OnInit {
         label: 'Admins', 
         value: users.filter(u => u.role === 'admin').length, 
         subLabel: 'Admin role users', 
-        color: 'var(--kcb-accent-dark)', 
+        color: '#7CC142', 
         bgColor: 'rgba(124,193,66,0.1)', 
         icon: 'M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z' 
       }
@@ -91,7 +94,7 @@ export class Users implements OnInit {
     if (this.searchTerm) {
       const term = this.searchTerm.toLowerCase();
       result = result.filter(u =>
-        `${u.name} ${u.email} ${u.username}`.toLowerCase().includes(term)
+        `${u.name} ${u.email} ${u.username} ${u.department || ''}`.toLowerCase().includes(term)
       );
     }
 
@@ -107,7 +110,9 @@ export class Users implements OnInit {
 
     // Sort
     result.sort((a, b) => {
-      let aVal: string, bVal: string;
+      let aVal = '';
+      let bVal = '';
+      
       if (this.sortKey === 'name') {
         aVal = a.name || '';
         bVal = b.name || '';
@@ -120,10 +125,14 @@ export class Users implements OnInit {
       } else if (this.sortKey === 'status') {
         aVal = a.status || '';
         bVal = b.status || '';
+      } else if (this.sortKey === 'lastLogin') {
+        aVal = a.lastLogin || '';
+        bVal = b.lastLogin || '';
       } else {
         aVal = a[this.sortKey as keyof User] as string || '';
         bVal = b[this.sortKey as keyof User] as string || '';
       }
+      
       return aVal.localeCompare(bVal) * this.sortDir;
     });
 
@@ -142,24 +151,31 @@ export class Users implements OnInit {
   pageNumbers = computed(() => {
     const total = this.totalPages();
     const current = this.currentPage;
-    const pages: number[] = [];
+    const pages: (number | string)[] = [];
+    
     if (total <= 7) {
       for (let i = 1; i <= total; i++) pages.push(i);
     } else {
       if (current <= 4) {
         for (let i = 1; i <= 5; i++) pages.push(i);
-        pages.push(-1, total);
+        pages.push('...', total);
       } else if (current >= total - 3) {
-        pages.push(1, -1);
+        pages.push(1, '...');
         for (let i = total - 4; i <= total; i++) pages.push(i);
       } else {
-        pages.push(1, -1, current - 1, current, current + 1, -1, total);
+        pages.push(1, '...', current - 1, current, current + 1, '...', total);
       }
     }
     return pages;
   });
 
   ngOnInit() {
+    // Check authentication
+    if (!this.authService.isAuthenticated()) {
+      this.router.navigate(['/login']);
+      return;
+    }
+    
     this.loadUsers();
     this.loadCurrentUser();
   }
@@ -167,25 +183,21 @@ export class Users implements OnInit {
   loadUsers() {
     this.userService.getUsers().subscribe({
       next: (users) => {
-        // Add default fields for mock data
-        const enrichedUsers = users.map(user => ({
-          ...user,
-          role: user.role || 'viewer',
-          status: user.status || 'active',
-          department: user.department || 'General',
-          lastLogin: user.lastLogin || new Date().toISOString().split('T')[0],
-          createdAt: user.createdAt || new Date().toISOString().split('T')[0]
-        }));
-        this.users.set(enrichedUsers);
+        this.users.set(users);
       },
-      error: (err) => this.showToast('error', 'Failed to load users: ' + err.message)
+      error: (err) => {
+        if (err.status === 401) {
+          this.authService.logout();
+          this.router.navigate(['/login']);
+        } else {
+          this.showToast('error', 'Failed to load users: ' + err.message);
+        }
+      }
     });
   }
 
   loadCurrentUser() {
-    const token = sessionStorage.getItem('kcb_token');
-    if (token) {
-      // You can decode token or get user info from somewhere else
+    if (this.authService.isAuthenticated()) {
       this.currentUserName.set('Administrator');
       this.currentUserRole.set('System Admin');
     }
@@ -209,9 +221,9 @@ export class Users implements OnInit {
     this.currentPage = 1;
   }
 
-  goToPage(page: number) {
-    if (page === -1) return;
-    this.currentPage = page;
+  goToPage(page: number | string) {
+    if (page === '...') return;
+    this.currentPage = page as number;
   }
 
   previousPage() {
@@ -269,7 +281,9 @@ export class Users implements OnInit {
         this.closeUserModal();
         this.showToast('success', `User ${this.isEditing ? 'updated' : 'created'} successfully`);
       },
-      error: (err) => this.showToast('error', err.message)
+      error: (err) => {
+        this.showToast('error', err.message || 'Failed to save user');
+      }
     });
   }
 
@@ -281,7 +295,9 @@ export class Users implements OnInit {
           this.closeDeleteModal();
           this.showToast('success', 'User deleted successfully');
         },
-        error: (err) => this.showToast('error', 'Failed to delete user: ' + err.message)
+        error: (err) => {
+          this.showToast('error', 'Failed to delete user: ' + err.message);
+        }
       });
     }
   }
@@ -319,7 +335,7 @@ export class Users implements OnInit {
     const url = URL.createObjectURL(blob);
     
     link.setAttribute('href', url);
-    link.setAttribute('download', `kcb-users-${new Date().toISOString().split('T')[0]}.csv`);
+    link.setAttribute('download', `users-${new Date().toISOString().split('T')[0]}.csv`);
     link.style.visibility = 'hidden';
     
     document.body.appendChild(link);
@@ -331,9 +347,8 @@ export class Users implements OnInit {
   }
 
   onLogout() {
-    sessionStorage.removeItem('kcb_token');
-    sessionStorage.removeItem('kcb_user');
-    window.location.href = '/login';
+    this.authService.logout();
+    this.router.navigate(['/login']);
   }
 
   closeUserModal() { 
@@ -352,7 +367,7 @@ export class Users implements OnInit {
   }
 
   closeModalOnBackdrop(event: MouseEvent, modalType: string) {
-    if ((event.target as HTMLElement).classList.contains('bg-black/45')) {
+    if ((event.target as HTMLElement).classList.contains('modal-backdrop')) {
       if (modalType === 'user') this.closeUserModal();
       if (modalType === 'view') this.closeViewModal();
       if (modalType === 'delete') this.closeDeleteModal();
@@ -370,20 +385,20 @@ export class Users implements OnInit {
 
   getRoleBadgeClass(role: string = 'viewer'): string {
     const classes: Record<string, string> = {
-      admin: 'bg-[rgba(0,61,76,0.1)] text-[var(--kcb-primary-light)]',
-      editor: 'bg-[rgba(124,193,66,0.15)] text-[#3b6b14]',
-      viewer: 'bg-[rgba(107,114,128,0.1)] text-gray-600'
+      admin: 'role-badge role-admin',
+      editor: 'role-badge role-editor',
+      viewer: 'role-badge role-viewer'
     };
-    return classes[role] 
+    return classes[role] || classes['viewer'];
   }
 
   getStatusBadgeClass(status: string = 'pending'): string {
     const classes: Record<string, string> = {
-      active: 'bg-[rgba(0,184,148,0.1)] text-[#00876e]',
-      inactive: 'bg-[rgba(214,48,49,0.1)] text-[#b71c1c]',
-      pending: 'bg-[rgba(243,156,18,0.12)] text-[#9a5c00]'
+      active: 'status-badge status-active',
+      inactive: 'status-badge status-inactive',
+      pending: 'status-badge status-pending'
     };
-    return classes[status] 
+    return classes[status] || classes['pending'];
   }
 
   capitalize(str: string): string {
@@ -392,9 +407,7 @@ export class Users implements OnInit {
 
   showToast(type: 'success' | 'error', message: string) {
     const toast = document.createElement('div');
-    toast.className = `fixed bottom-4 right-4 px-4 py-2 rounded-md text-white text-sm z-50 animate-slideUp ${
-      type === 'success' ? 'bg-green-500' : 'bg-red-500'
-    }`;
+    toast.className = `toast toast-${type}`;
     toast.textContent = message;
     document.body.appendChild(toast);
     
