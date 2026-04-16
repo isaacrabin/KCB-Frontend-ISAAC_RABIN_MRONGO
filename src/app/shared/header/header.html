@@ -1,0 +1,33 @@
+<header class="bg-[var(--kcb-primary)] sticky top-0 z-20 shadow-lg">
+  <div class="px-6 py-3 flex items-center justify-between">
+    <div class="flex items-center gap-3">
+      <div class="w-8 h-8 bg-[var(--kcb-accent)] rounded-lg flex items-center justify-center">
+        <svg class="w-4 h-4 fill-white" viewBox="0 0 24 24">
+          <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
+          <polyline points="9 22 9 12 15 12 15 22"/>
+        </svg>
+      </div>
+      <span class="font-['Syne'] text-white font-bold text-lg tracking-tight">
+        KCB <em class="text-[var(--kcb-accent)] not-italic">Portal</em>
+      </span>
+    </div>
+
+    <div class="flex items-center gap-4">
+      <div class="text-right hidden sm:block">
+        <p class="text-white text-sm font-medium">{{ userName() }}</p>
+        <span class="text-white/50 text-xs">{{ userRole() }}</span>
+      </div>
+      <div class="w-9 h-9 rounded-full bg-[var(--kcb-accent)] flex items-center justify-center text-white font-bold text-sm cursor-pointer">
+        {{ userInitials() }}
+      </div>
+      <button (click)="onLogout()" class="bg-white/10 border border-white/20 text-white px-3 py-1.5 rounded-md text-xs flex items-center gap-1.5 hover:bg-white/20 transition">
+        <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/>
+          <polyline points="16 17 21 12 16 7"/>
+          <line x1="21" y1="12" x2="9" y2="12"/>
+        </svg>
+        Logout
+      </button>
+    </div>
+  </div>
+</header>

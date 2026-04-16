@@ -1,0 +1,28 @@
+/* You can add global styles to this file, and also import other style files */
+
+@import 'tailwindcss';
+
+
+:root {
+  --kcb-primary: #003D4C;
+  --kcb-primary-light: #005966;
+  --kcb-accent: #7CC142;
+  --kcb-accent-dark: #5fa030;
+  --kcb-neutral-light: #F2F2F2;
+  --kcb-neutral-dark: #333333;
+  --kcb-white: #ffffff;
+  --kcb-danger: #d63031;
+  --kcb-warning: #f39c12;
+  --kcb-success: #00b894;
+  --kcb-text-muted: #6b7280;
+  --kcb-border: rgba(0,61,76,0.12);
+  --kcb-shadow: 0 4px 24px rgba(0,61,76,0.10);
+  --kcb-shadow-sm: 0 2px 8px rgba(0,61,76,0.07);
+  --radius: 10px;
+  --radius-sm: 6px;
+  --radius-lg: 16px;
+}
+
+body {
+  font-family:  sans-serif;
+}
