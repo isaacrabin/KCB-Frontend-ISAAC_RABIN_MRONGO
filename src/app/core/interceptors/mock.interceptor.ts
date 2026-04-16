@@ -44,7 +44,7 @@ export const mockBackendInterceptor: HttpInterceptorFn = (req, next) => {
   if (url.endsWith('/login') && method === 'POST') {
     const { username, password }: AuthModel = body as AuthModel;
 
-    if (username === 'admin' && password === 'admin') {
+    if (username === 'admin' && password === 'admin123'|| username === 'user' && password === 'user123') {
       return ok({ token: 'fake-jwt-token' });
     }
 
